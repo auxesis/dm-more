@@ -11,6 +11,46 @@ inside your project's directory and then setting up the :search repository:
 
   DataMapper.setup :search, "ferret:///tmp/ferret_index.sock"
 
+= Searching multiple fields
+
+You can use the Model.search syntax provided by dm-is-searchable to have Ferret
+search a single field, but the more common scenario is searching across all 
+fields. 
+
+DataMapper's query syntax makes it difficult to do this, however dm-ferret-adapter 
+provides an interface to query Ferret directly: 
+
+  DataMapper.repository(:search).search("flower")
+  # => {Image=>[1, 3, 8]}
+
+If you're doing this often, it might be useful to define a finder on your model: 
+
+  class Image
+    include DataMapper::Resource
+
+    property :id, Serial
+    property :title, String
+  
+    is :searchable # defaults to :search repository
+  
+    def self.find_with_ferret(query)
+      ids = repository(:search).search(query)
+      self.all(:id => ids[self])
+    end
+  end
+
+You can use the full Ferret Query Language through this interface. You can find
+more documentation on FQL at:
+  
+	http://ferret.davebalmain.com/api/classes/Ferret/QueryParser.html
+
+= Use within Merb
+
+To use separate indexes for each environment, put this in after_app_loads in
+your config/init.rb: 
+
+  DataMapper.setup(:search, "ferret://#{Merb.root}/index/#{Merb.environment}")
+
 = Sample Code
 
 require 'rubygems'
